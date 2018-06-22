@@ -28,18 +28,28 @@ guests.  When the party's over, change the access point password.
     
     auto lo
     iface lo inet loopback
-    
-    iface eth0 inet manual
-    
+
     allow-hotplug wlan0
     iface wlan0 inet manual
-        wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
-    
+    	wpa-roam /etc/wpa_supplicant/wpa_supplicant.conf
+
     allow-hotplug uap0
     auto uap0
     iface uap0 inet static
-        address 10.3.141.1
-        netmask 255.255.255.0
+     	address 192.168.10.1
+    	netmask 255.255.255.0
+
+    auto eth0
+    iface eth0 inet static
+    	address 192.168.100.250
+    	netmask 255.255.255.0
+     	network 192.168.100.0
+     	broadcast 192.168.100.255
+    	gateway 192.168.100.1
+        dns-nameservers 8.8.8.8 8.8.4.4
+
+    iface default inet dhcp
+
 
 ## /etc/udev/rules.d/90-wireless.rules 
 
@@ -114,17 +124,11 @@ enough characters to be a legal password!  (8 characters minimum).
     systemctl restart dnsmasq
     systemctl restart hostapd
 
-## Bridge AP to cient side
-
-This is optional.  If you do this step, then someone connected to the AP side can browse the internet through the client side.
-
-    echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
-    echo 1 > /proc/sys/net/ipv4/ip_forward
-    iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE
-    iptables -A FORWARD -i wlan0 -o uap0 -m state --state RELATED,ESTABLISHED -j ACCEPT
-    iptables -A FORWARD -i uap0 -o wlan0 -j ACCEPT
-    iptables-save > /etc/iptables/rules.v4
-
-That's it, you should be good to go.  You should not have needed to reboot your Pi, but if you do then everything you did will
-remain in place and functional.
+## All done or...
+At this point, I expect everything to work after a reboot. Instead, I end up with wlan0 UP and ap0 DOWN (or vice-versa) when checking via ip addr, and dmesg indicates some errors in the Broadcom driver. After some tinkering, I discovered the following sequence of commands after a reboot would get both interfaces up and working simultaneously, like we wanted all along:
+    
+    sudo ifdown --force wlan0
+    sudo ifup wlan0
+    
+Thant, all.
 
