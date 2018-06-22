@@ -130,5 +130,5 @@ At this point, I expect everything to work after a reboot. Instead, I end up wit
     sudo ifdown --force wlan0
     sudo ifup wlan0
     
-Thant, all.
+That's, all.
 
